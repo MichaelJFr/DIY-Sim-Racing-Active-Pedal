@@ -101,10 +101,10 @@ int8_t StepperWithLimits::moveTo(int32_t position, bool blocking) {
 }
 
 int32_t StepperWithLimits::getCurrentPositionSteps() const {
-  return _stepper->getCurrentPosition() - _posMin;
+  return _stepper->getCurrentPosition();
 }
 double StepperWithLimits::getCurrentPositionFraction() const {
-  return double(getCurrentPositionSteps()) / getTravelSteps();
+  return double(getCurrentPositionSteps() - _posMin) / getTravelSteps();
 }
 
 int32_t StepperWithLimits::getTargetPositionSteps() const {

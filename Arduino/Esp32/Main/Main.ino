@@ -25,12 +25,16 @@ DAP_calculationVariables_st dap_calculationVariables_st;
 
 #include "ForceCurve.h"
 
-ForceCurve_Interpolated* forceCurve;
-
 //    define one of these to determine strategy for pedal movement update
 //#define USE_LINEAR_STRATEGY
 #define INTERP_SPRING_STIFFNESS
+//#define USE_FORCE_TARGETING
 
+#if defined INTERP_SPRING_STIFFNESS
+  ForceCurve_Interpolated* forceCurve;
+#elif defined USE_FORCE_TARGETING
+  ForceCurve* forceCurve;
+#endif
 
 /**********************************************************************************************/
 /*                                                                                            */
@@ -178,8 +182,12 @@ void setup()
 
   // compute pedal stiffness parameters
   dap_calculationVariables_st.updateEndstops(stepper->getLimitMin(), stepper->getLimitMax());
-  #ifdef INTERP_SPRING_STIFFNESS
+  #if defined INTERP_SPRING_STIFFNESS
     forceCurve = new ForceCurve_Interpolated(dap_config_st, dap_calculationVariables_st);
+  #elif defined USE_FORCE_TARGETING
+//    forceCurve = new ForceCurve_ConstantForce(0.4);
+    forceCurve = new ForceCurve_LinearSpring(dap_calculationVariables_st.Force_Min, dap_calculationVariables_st.Force_Max);
+//    forceCurve = new ForceCurve_Interpolated(dap_config_st, dap_calculationVariables_st);
   #endif
 
   kalman = new KalmanFilter(loadcell->getVarianceEstimate());
@@ -315,6 +323,9 @@ void loop() {
         double stepperPosFraction = stepper->getCurrentPositionFraction();
         int32_t Position_Next = MoveByInterpolatedStrategy(filteredReading, stepperPosFraction, forceCurve, dap_calculationVariables_st);
 
+      #elif defined USE_FORCE_TARGETING
+        double stepperPosFraction = stepper->getCurrentPositionFraction();
+        int32_t Position_Next = MoveByForceTargetingStrategy(filteredReading, stepper, forceCurve);
 
       #endif
 
